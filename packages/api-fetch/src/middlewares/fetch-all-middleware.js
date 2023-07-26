@@ -46,6 +46,7 @@ const parseLinkHeader = ( linkHeader ) => {
 		: {};
 };
 
+
 /**
  * @param {Response} response
  * @return {string | undefined} The next page URL.
@@ -54,6 +55,25 @@ const getNextPageUrl = ( response ) => {
 	const { next } = parseLinkHeader( response.headers.get( 'link' ) );
 	return next;
 };
+
+
+/**
+ *
+ * @param {Response} response
+ * @return {number | undefined} The total pages available.
+ */
+const getTotalPages = ( response ) => {
+	const totalPagesString = response.headers.get( 'X-Wp-Totalpages' ) ?? '';
+
+	const totalPages = parseInt( totalPagesString, 10 );
+
+	if ( ! Number.isInteger( totalPages ) ) {
+		return;
+	}
+
+	return totalPages;
+};
+
 
 /**
  * @param {import('../types').APIFetchOptions} options
@@ -84,11 +104,13 @@ const fetchAllMiddleware = async ( options, next ) => {
 		return next( options );
 	}
 
+	const initialQuery = modifyQuery( options, {
+		per_page: 100,
+	} );
+
 	// Retrieve requested page of results.
 	const response = await apiFetch( {
-		...modifyQuery( options, {
-			per_page: 100,
-		} ),
+		...initialQuery,
 		// Ensure headers are returned for page 1.
 		parse: false,
 	} );
@@ -107,21 +129,33 @@ const fetchAllMiddleware = async ( options, next ) => {
 		return results;
 	}
 
-	// Iteratively fetch all remaining pages until no "next" header is found.
-	let mergedResults = /** @type {any[]} */ ( [] ).concat( results );
-	while ( nextPage ) {
-		const nextResponse = await apiFetch( {
-			...options,
-			// Ensure the URL for the next page is used instead of any provided path.
-			path: undefined,
-			url: nextPage,
-			// Ensure we still get headers so we can identify the next page.
-			parse: false,
-		} );
-		const nextResults = await parseResponse( nextResponse );
-		mergedResults = mergedResults.concat( nextResults );
-		nextPage = getNextPageUrl( nextResponse );
-	}
+	const totalPagesAvailable = getTotalPages( response ) ?? 0;
+
+	//Comment: Avoid first page, because it was previously fetched.
+	const totalPagesToRequest = totalPagesAvailable ? totalPagesAvailable - 1: 0;
+
+
+	// Comment: Retrieve pages in batch.
+	const pagesPromisesBatch = Array( totalPagesToRequest )
+		.fill(undefined)
+		.map( ( _, index ) =>
+			apiFetch( {
+				...options,
+				path: undefined,
+				// Ignores the first page because it was previously fetched.
+				url: `${ initialQuery.url }&page=${ index + 2 }`,
+			} )
+		);
+
+	const pagesResults = await Promise.all(
+		pagesPromisesBatch
+	);
+
+	const mergedResults = [
+		...results,
+		...pagesResults.flat( 1 ),
+	];
+
 	return mergedResults;
 };
 
