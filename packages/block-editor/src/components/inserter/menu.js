@@ -26,6 +26,8 @@ import useInsertionPoint from './hooks/use-insertion-point';
 import InserterTabs from './tabs';
 import { store as blockEditorStore } from '../../store';
 
+const SHOWN_BLOCK_TYPES = 30;
+
 function InserterMenu(
 	{
 		rootClientId,
@@ -209,6 +211,7 @@ function InserterMenu(
 							}
 							showBlockDirectory
 							shouldFocusBlock={ shouldFocusBlock }
+							maxBlockTypes={ SHOWN_BLOCK_TYPES }
 						/>
 					) }
 					{ ! filterValue && ( showPatterns || hasReusableBlocks ) && (

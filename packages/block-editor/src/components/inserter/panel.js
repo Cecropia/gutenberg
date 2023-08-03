@@ -3,7 +3,20 @@
  */
 import { Icon } from '@wordpress/components';
 
-function InserterPanel( { title, icon, children } ) {
+/**
+ * External dependencies
+ */
+import classNames from 'classnames';
+
+
+function InserterPanel( { title, icon, removeRightPadding, children } ) {
+	const blockEditorInserterPanelContentClassnames = classNames(
+		'block-editor-inserter__panel-content',
+		{
+			'pr-0': removeRightPadding 
+		}
+	);
+
 	return (
 		<>
 			<div className="block-editor-inserter__panel-header">
@@ -12,7 +25,7 @@ function InserterPanel( { title, icon, children } ) {
 				</h2>
 				<Icon icon={ icon } />
 			</div>
-			<div className="block-editor-inserter__panel-content">
+			<div className={blockEditorInserterPanelContentClassnames}>
 				{ children }
 			</div>
 		</>

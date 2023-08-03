@@ -83,7 +83,9 @@
 		"@wordpress/viewport": "file:packages/viewport",
 		"@wordpress/warning": "file:packages/warning",
 		"@wordpress/widgets": "file:packages/widgets",
-		"@wordpress/wordcount": "file:packages/wordcount"
+		"@wordpress/wordcount": "file:packages/wordcount",
+		"react-virtualized-auto-sizer": "1.0.20",
+		"react-window": "1.8.9"
 	},
 	"devDependencies": {
 		"@actions/core": "1.8.0",

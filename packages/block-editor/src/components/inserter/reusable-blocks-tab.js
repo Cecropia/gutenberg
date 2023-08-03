@@ -8,10 +8,11 @@ import { addQueryArgs } from '@wordpress/url';
 /**
  * Internal dependencies
  */
-import BlockTypesList from '../block-types-list';
 import InserterPanel from './panel';
 import InserterNoResults from './no-results';
 import useBlockTypesState from './hooks/use-block-types-state';
+import ReusableBlockTypeList from '../reusable-block-type-list';
+
 
 function ReusableBlocksList( { onHover, onInsert, rootClientId } ) {
 	const [ items, , , onSelectItem ] = useBlockTypesState(
@@ -29,7 +30,7 @@ function ReusableBlocksList( { onHover, onInsert, rootClientId } ) {
 
 	return (
 		<InserterPanel title={ __( 'Reusable blocks' ) }>
-			<BlockTypesList
+			<ReusableBlockTypeList
 				items={ filteredItems }
 				onSelect={ onSelectItem }
 				onHover={ onHover }

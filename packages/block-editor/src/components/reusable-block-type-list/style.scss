@@ -1,0 +1,12 @@
+$block-inserter-preview-height: 350px;
+$block-inserter-tabs-height: 44px;
+
+.block-editor-reusable-block-type-list>[role="presentation"] {
+	overflow: hidden;
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.block-editor-reusable-block-type-list {
+	height: calc(100vh - (#{$block-inserter-preview-height} - #{$block-inserter-tabs-height} + #{$grid-unit-20}));
+}
