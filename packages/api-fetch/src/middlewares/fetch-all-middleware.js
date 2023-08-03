@@ -46,7 +46,6 @@ const parseLinkHeader = ( linkHeader ) => {
 		: {};
 };
 
-
 /**
  * @param {Response} response
  * @return {string | undefined} The next page URL.
@@ -55,7 +54,6 @@ const getNextPageUrl = ( response ) => {
 	const { next } = parseLinkHeader( response.headers.get( 'link' ) );
 	return next;
 };
-
 
 /**
  *
@@ -73,8 +71,6 @@ const getTotalPages = ( response ) => {
 
 	return totalPages;
 };
-
-
 /**
  * @param {import('../types').APIFetchOptions} options
  * @return {boolean} True if the request contains an unbounded query.
@@ -115,48 +111,57 @@ const fetchAllMiddleware = async ( options, next ) => {
 		parse: false,
 	} );
 
-	const results = await parseResponse( response );
+	const firstPageResult = await parseResponse( response );
 
-	if ( ! Array.isArray( results ) ) {
+	if ( ! Array.isArray( firstPageResult ) ) {
 		// We have no reliable way of merging non-array results.
-		return results;
+		return firstPageResult;
 	}
 
-	let nextPage = getNextPageUrl( response );
+	const nextPage = getNextPageUrl( response );
 
 	if ( ! nextPage ) {
 		// There are no further pages to request.
-		return results;
+		return firstPageResult;
 	}
 
 	const totalPagesAvailable = getTotalPages( response ) ?? 0;
 
-	//Comment: Avoid first page, because it was previously fetched.
-	const totalPagesToRequest = totalPagesAvailable ? totalPagesAvailable - 1: 0;
+	// Ignores the first page because it was previously fetched.
+	const remainingPagesToRequest = Math.max( totalPagesAvailable - 1, 0 );
 
+	// Fetch the remaining pages in parallel.
+	const restPagesPromiseBatch = [];
 
-	// Comment: Retrieve pages in batch.
-	const pagesPromisesBatch = Array( totalPagesToRequest )
-		.fill(undefined)
-		.map( ( _, index ) =>
-			apiFetch( {
-				...options,
-				path: undefined,
-				// Ignores the first page because it was previously fetched.
-				url: `${ initialQuery.url }&page=${ index + 2 }`,
-			} )
-		);
+	for (
+		let remainingPagesToRequestIndex = 0;
+		remainingPagesToRequestIndex < remainingPagesToRequest;
+		remainingPagesToRequestIndex++
+	) {
+		// Ignores the first page.
+		const pageToRequestUrl = `${ initialQuery.url }&page=${
+			remainingPagesToRequestIndex + 2
+		}`;
 
-	const pagesResults = await Promise.all(
-		pagesPromisesBatch
+		const pageToRequestPromise = apiFetch( {
+			...options,
+			path: undefined,
+			url: pageToRequestUrl,
+		} );
+
+		restPagesPromiseBatch.push( pageToRequestPromise );
+	}
+
+	const settledRestPagesResults = await Promise.allSettled(
+		restPagesPromiseBatch
 	);
 
-	const mergedResults = [
-		...results,
-		...pagesResults.flat( 1 ),
-	];
+	const restPagesResults = settledRestPagesResults
+		.filter( ( { status } ) => status === 'fulfilled' )
+		// @ts-ignore
+		.map( ( { value } ) => value );
 
-	return mergedResults;
+	return firstPageResult.concat( restPagesResults.flat( 1 ) );
 };
 
 export default fetchAllMiddleware;
