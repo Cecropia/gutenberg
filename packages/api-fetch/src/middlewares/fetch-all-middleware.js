@@ -127,7 +127,7 @@ const fetchAllMiddleware = async ( options, next ) => {
 
 	const totalPagesAvailable = getTotalPages( response ) ?? 0;
 
-	// Ignores the first page because it was previously fetched.
+	//Ignores the first page because it was previously fetched.
 	const remainingPagesToRequest = Math.max( totalPagesAvailable - 1, 0 );
 
 	// Fetch the remaining pages in parallel.
@@ -161,7 +161,7 @@ const fetchAllMiddleware = async ( options, next ) => {
 		// @ts-ignore
 		.map( ( { value } ) => value );
 
-	return firstPageResult.concat( restPagesResults.flat( 1 ) );
+	return [ ...firstPageResult, ...restPagesResults.flat( 1 ) ];
 };
 
 export default fetchAllMiddleware;
