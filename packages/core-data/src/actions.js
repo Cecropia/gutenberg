@@ -10,6 +10,8 @@ import { v4 as uuid } from 'uuid';
 import apiFetch from '@wordpress/api-fetch';
 import { addQueryArgs } from '@wordpress/url';
 import deprecated from '@wordpress/deprecated';
+import { debounce } from '@wordpress/compose';
+
 
 /**
  * Internal dependencies
@@ -397,6 +399,31 @@ export function __unstableCreateUndoLevel() {
 	return { type: 'CREATE_UNDO_LEVEL' };
 }
 
+const TEN_SECONDS_IN_MS = 10000;
+
+const debouncedReceiveEntityRecords = debounce(
+	/**
+	 * @param {any}          dispatch        Redux dispatch.
+	 * @param {string}       kind            Kind of the received entity record.
+	 * @param {string}       name            Name of the received entity record.
+	 * @param {Array|Object} records         Records received.
+	 * @param {?Object}      query           Query Object.
+	 * @param {?boolean}     invalidateCache Should invalidate query caches.
+	 * @param {?Object}      edits           Edits to reset.
+	 */
+	( dispatch, kind, name, records, query, invalidateCache, edits ) => {
+		dispatch.receiveEntityRecords(
+			kind,
+			name,
+			records,
+			query,
+			invalidateCache,
+			edits
+		);
+	},
+	TEN_SECONDS_IN_MS
+);
+
 /**
  * Action triggered to save an entity record.
  *
@@ -589,14 +616,27 @@ export const saveEntityRecord =
 						method: recordId ? 'PUT' : 'POST',
 						data: edits,
 					} );
-					dispatch.receiveEntityRecords(
-						kind,
-						name,
-						updatedRecord,
-						undefined,
-						true,
-						edits
-					);
+
+					if ( kind === 'postType' && name === 'wp_block' ) {
+						debouncedReceiveEntityRecords(
+							dispatch,
+							kind,
+							name,
+							updatedRecord,
+							undefined,
+							true,
+							edits
+						);
+					} else {
+						dispatch.receiveEntityRecords(
+							kind,
+							name,
+							updatedRecord,
+							undefined,
+							true,
+							edits
+						);
+					}
 				}
 			} catch ( _error ) {
 				hasError = true;

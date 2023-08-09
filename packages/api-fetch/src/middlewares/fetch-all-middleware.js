@@ -161,7 +161,7 @@ const fetchAllMiddleware = async ( options, next ) => {
 		// @ts-ignore
 		.map( ( { value } ) => value );
 
-	return firstPageResult.concat( restPagesResults.flat( 1 ) );
+	return [ ...firstPageResult, ...restPagesResults.flat( 1 ) ];
 };
 
 export default fetchAllMiddleware;
