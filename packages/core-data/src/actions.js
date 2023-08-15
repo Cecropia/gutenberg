@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { castArray, isEqual, find } from 'lodash';
+import { castArray, isEqual, find, debounce } from 'lodash';
 import { v4 as uuid } from 'uuid';
 
 /**
@@ -10,8 +10,8 @@ import { v4 as uuid } from 'uuid';
 import apiFetch from '@wordpress/api-fetch';
 import { addQueryArgs } from '@wordpress/url';
 import deprecated from '@wordpress/deprecated';
-import { debounce } from '@wordpress/compose';
-
+import { select as directSelect } from '@wordpress/data';
+import { store as customConfigStore } from '@wordpress/custom-config';
 
 /**
  * Internal dependencies
@@ -399,7 +399,8 @@ export function __unstableCreateUndoLevel() {
 	return { type: 'CREATE_UNDO_LEVEL' };
 }
 
-const TEN_SECONDS_IN_MS = 10000;
+const { refreshEntityRecordsDebounceTime } =
+	directSelect( customConfigStore ).getSaveEntityRecordConfig();
 
 const debouncedReceiveEntityRecords = debounce(
 	/**
@@ -421,7 +422,7 @@ const debouncedReceiveEntityRecords = debounce(
 			edits
 		);
 	},
-	TEN_SECONDS_IN_MS
+	refreshEntityRecordsDebounceTime
 );
 
 /**

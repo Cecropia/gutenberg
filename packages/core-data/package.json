@@ -32,6 +32,7 @@
 		"@babel/runtime": "^7.16.0",
 		"@wordpress/api-fetch": "file:../api-fetch",
 		"@wordpress/blocks": "file:../blocks",
+		"@wordpress/custom-config": "file:../custom-config",
 		"@wordpress/data": "file:../data",
 		"@wordpress/deprecated": "file:../deprecated",
 		"@wordpress/element": "file:../element",

@@ -2,6 +2,8 @@
  * WordPress dependencies
  */
 import { addQueryArgs } from '@wordpress/url';
+import { select } from '@wordpress/data';
+import { store as customConfigStore } from '@wordpress/custom-config';
 
 /**
  * Internal dependencies
@@ -84,6 +86,14 @@ const requestContainsUnboundedQuery = ( options ) => {
 };
 
 /**
+ * Number of items per page for fetchAllMiddleware.
+ *
+ * @type {number}
+ */
+const FETCH_ALL_MIDDLEWARE_ITEMS_PER_PAGE =
+	select( customConfigStore ).getFetchAllMiddlewareConfig().itemsPerPage;
+
+/**
  * The REST API enforces an upper limit on the per_page option. To handle large
  * collections, apiFetch consumers can pass `per_page=-1`; this middleware will
  * then recursively assemble a full response array from all available pages.
@@ -101,7 +111,7 @@ const fetchAllMiddleware = async ( options, next ) => {
 	}
 
 	const initialQuery = modifyQuery( options, {
-		per_page: 100,
+		per_page: FETCH_ALL_MIDDLEWARE_ITEMS_PER_PAGE,
 	} );
 
 	// Retrieve requested page of results.
@@ -127,7 +137,7 @@ const fetchAllMiddleware = async ( options, next ) => {
 
 	const totalPagesAvailable = getTotalPages( response ) ?? 0;
 
-	// Ignores the first page because it was previously fetched.
+	// Calculate remaining pages to request.
 	const remainingPagesToRequest = Math.max( totalPagesAvailable - 1, 0 );
 
 	// Fetch the remaining pages in parallel.
@@ -138,7 +148,6 @@ const fetchAllMiddleware = async ( options, next ) => {
 		remainingPagesToRequestIndex < remainingPagesToRequest;
 		remainingPagesToRequestIndex++
 	) {
-		// Ignores the first page.
 		const pageToRequestUrl = `${ initialQuery.url }&page=${
 			remainingPagesToRequestIndex + 2
 		}`;
