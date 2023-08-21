@@ -10,6 +10,15 @@ import { store as customConfigStore } from '@wordpress/custom-config';
  */
 import apiFetch from '..';
 
+const worker = new window.Worker(
+	new URL( '../workers/fetch-all-middleware.worker.js', import.meta.url ),
+	{
+		name: 'Fetch All Middleware Worker',
+		type: 'module',
+		credentials: 'include',
+	}
+);
+
 /**
  * Apply query arguments to both URL and Path, whichever is present.
  *
@@ -135,42 +144,56 @@ const fetchAllMiddleware = async ( options, next ) => {
 		return firstPageResult;
 	}
 
+	const workerWorkPromise = new Promise( ( resolve, reject ) => {
+		/**
+		 * Message Event for fetch-all-middleware worker
+		 *
+		 * @typedef {{type: "data", message: unknown[]} | {type: "error", message: unknown }} fetchAllMiddlewareMessageEvent
+		 */
+
+		/**
+		 * Handles message events
+		 *
+		 * @param {MessageEvent<fetchAllMiddlewareMessageEvent>} message
+		 */
+		const handleMessage = ( { data } ) => {
+			// Cleans worker events listeners
+			worker.removeEventListener( 'message', handleMessage );
+			worker.removeEventListener( 'messageerror', reject );
+			worker.removeEventListener( 'error', reject );
+
+			// Process message
+			if ( data.type === 'error' ) {
+				return reject( data.message );
+			}
+
+			resolve( data.message );
+		};
+
+		worker.addEventListener( 'message', handleMessage );
+		worker.addEventListener( 'messageerror', reject );
+		worker.addEventListener( 'error', reject );
+	} );
+
 	const totalPagesAvailable = getTotalPages( response ) ?? 0;
 
 	// Calculate remaining pages to request.
 	const remainingPagesToRequest = Math.max( totalPagesAvailable - 1, 0 );
 
-	// Fetch the remaining pages in parallel.
-	const restPagesPromiseBatch = [];
-
-	for (
-		let remainingPagesToRequestIndex = 0;
-		remainingPagesToRequestIndex < remainingPagesToRequest;
-		remainingPagesToRequestIndex++
-	) {
-		const pageToRequestUrl = `${ initialQuery.url }&page=${
-			remainingPagesToRequestIndex + 2
-		}`;
-
-		const pageToRequestPromise = apiFetch( {
-			...options,
-			path: undefined,
-			url: pageToRequestUrl,
-		} );
-
-		restPagesPromiseBatch.push( pageToRequestPromise );
-	}
-
-	const settledRestPagesResults = await Promise.allSettled(
-		restPagesPromiseBatch
+	const pagesToRequest = Array.from(
+		{ length: remainingPagesToRequest },
+		( _, index ) => `${ initialQuery.url }&page=${ index + 2 }`
 	);
 
-	const restPagesResults = settledRestPagesResults
-		.filter( ( { status } ) => status === 'fulfilled' )
-		// @ts-ignore
-		.map( ( { value } ) => value );
+	const requestHeaders = [ ...response.headers.entries() ];
 
-	return [ ...firstPageResult, ...restPagesResults.flat( 1 ) ];
+	worker.postMessage( {
+		firstPageResult,
+		pagesToRequest,
+		requestHeaders,
+	} );
+
+	return workerWorkPromise;
 };
 
 export default fetchAllMiddleware;
