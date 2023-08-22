@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { castArray, isEqual, find } from 'lodash';
+import { castArray, isEqual, find, debounce } from 'lodash';
 import { v4 as uuid } from 'uuid';
 
 /**
@@ -10,6 +10,8 @@ import { v4 as uuid } from 'uuid';
 import apiFetch from '@wordpress/api-fetch';
 import { addQueryArgs } from '@wordpress/url';
 import deprecated from '@wordpress/deprecated';
+import { select as directSelect } from '@wordpress/data';
+import { store as customConfigStore } from '@wordpress/custom-config';
 
 /**
  * Internal dependencies
@@ -397,6 +399,32 @@ export function __unstableCreateUndoLevel() {
 	return { type: 'CREATE_UNDO_LEVEL' };
 }
 
+const { refreshEntityRecordsDebounceTime } =
+	directSelect( customConfigStore ).getSaveEntityRecordConfig();
+
+const debouncedReceiveEntityRecords = debounce(
+	/**
+	 * @param {any}          dispatch        Redux dispatch.
+	 * @param {string}       kind            Kind of the received entity record.
+	 * @param {string}       name            Name of the received entity record.
+	 * @param {Array|Object} records         Records received.
+	 * @param {?Object}      query           Query Object.
+	 * @param {?boolean}     invalidateCache Should invalidate query caches.
+	 * @param {?Object}      edits           Edits to reset.
+	 */
+	( dispatch, kind, name, records, query, invalidateCache, edits ) => {
+		dispatch.receiveEntityRecords(
+			kind,
+			name,
+			records,
+			query,
+			invalidateCache,
+			edits
+		);
+	},
+	refreshEntityRecordsDebounceTime
+);
+
 /**
  * Action triggered to save an entity record.
  *
@@ -589,14 +617,27 @@ export const saveEntityRecord =
 						method: recordId ? 'PUT' : 'POST',
 						data: edits,
 					} );
-					dispatch.receiveEntityRecords(
-						kind,
-						name,
-						updatedRecord,
-						undefined,
-						true,
-						edits
-					);
+
+					if ( kind === 'postType' && name === 'wp_block' ) {
+						debouncedReceiveEntityRecords(
+							dispatch,
+							kind,
+							name,
+							updatedRecord,
+							undefined,
+							true,
+							edits
+						);
+					} else {
+						dispatch.receiveEntityRecords(
+							kind,
+							name,
+							updatedRecord,
+							undefined,
+							true,
+							edits
+						);
+					}
 				}
 			} catch ( _error ) {
 				hasError = true;
