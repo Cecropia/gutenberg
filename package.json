@@ -36,6 +36,7 @@
 		"@wordpress/components": "file:packages/components",
 		"@wordpress/compose": "file:packages/compose",
 		"@wordpress/core-data": "file:packages/core-data",
+		"@wordpress/custom-config": "file:packages/custom-config",
 		"@wordpress/customize-widgets": "file:packages/customize-widgets",
 		"@wordpress/data": "file:packages/data",
 		"@wordpress/data-controls": "file:packages/data-controls",
