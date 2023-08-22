@@ -2,11 +2,22 @@
  * WordPress dependencies
  */
 import { addQueryArgs } from '@wordpress/url';
+import { select } from '@wordpress/data';
+import { store as customConfigStore } from '@wordpress/custom-config';
 
 /**
  * Internal dependencies
  */
 import apiFetch from '..';
+
+const worker = new window.Worker(
+	new URL( '../workers/fetch-all-middleware.worker.js', import.meta.url ),
+	{
+		name: 'Fetch All Middleware Worker',
+		type: 'module',
+		credentials: 'include',
+	}
+);
 
 /**
  * Apply query arguments to both URL and Path, whichever is present.
@@ -56,6 +67,22 @@ const getNextPageUrl = ( response ) => {
 };
 
 /**
+ *
+ * @param {Response} response
+ * @return {number | undefined} The total pages available.
+ */
+const getTotalPages = ( response ) => {
+	const totalPagesString = response.headers.get( 'X-Wp-Totalpages' ) ?? '';
+
+	const totalPages = parseInt( totalPagesString, 10 );
+
+	if ( ! Number.isInteger( totalPages ) ) {
+		return;
+	}
+
+	return totalPages;
+};
+/**
  * @param {import('../types').APIFetchOptions} options
  * @return {boolean} True if the request contains an unbounded query.
  */
@@ -66,6 +93,14 @@ const requestContainsUnboundedQuery = ( options ) => {
 		!! options.url && options.url.indexOf( 'per_page=-1' ) !== -1;
 	return pathIsUnbounded || urlIsUnbounded;
 };
+
+/**
+ * Number of items per page for fetchAllMiddleware.
+ *
+ * @type {number}
+ */
+const FETCH_ALL_MIDDLEWARE_ITEMS_PER_PAGE =
+	select( customConfigStore ).getFetchAllMiddlewareConfig().itemsPerPage;
 
 /**
  * The REST API enforces an upper limit on the per_page option. To handle large
@@ -84,45 +119,81 @@ const fetchAllMiddleware = async ( options, next ) => {
 		return next( options );
 	}
 
+	const initialQuery = modifyQuery( options, {
+		per_page: FETCH_ALL_MIDDLEWARE_ITEMS_PER_PAGE,
+	} );
+
 	// Retrieve requested page of results.
 	const response = await apiFetch( {
-		...modifyQuery( options, {
-			per_page: 100,
-		} ),
+		...initialQuery,
 		// Ensure headers are returned for page 1.
 		parse: false,
 	} );
 
-	const results = await parseResponse( response );
+	const firstPageResult = await parseResponse( response );
 
-	if ( ! Array.isArray( results ) ) {
+	if ( ! Array.isArray( firstPageResult ) ) {
 		// We have no reliable way of merging non-array results.
-		return results;
+		return firstPageResult;
 	}
 
-	let nextPage = getNextPageUrl( response );
+	const nextPage = getNextPageUrl( response );
 
 	if ( ! nextPage ) {
 		// There are no further pages to request.
-		return results;
+		return firstPageResult;
 	}
 
-	// Iteratively fetch all remaining pages until no "next" header is found.
-	let mergedResults = /** @type {any[]} */ ( [] ).concat( results );
-	while ( nextPage ) {
-		const nextResponse = await apiFetch( {
-			...options,
-			// Ensure the URL for the next page is used instead of any provided path.
-			path: undefined,
-			url: nextPage,
-			// Ensure we still get headers so we can identify the next page.
-			parse: false,
-		} );
-		const nextResults = await parseResponse( nextResponse );
-		mergedResults = mergedResults.concat( nextResults );
-		nextPage = getNextPageUrl( nextResponse );
-	}
-	return mergedResults;
+	const workerWorkPromise = new Promise( ( resolve, reject ) => {
+		/**
+		 * Message Event for fetch-all-middleware worker
+		 *
+		 * @typedef {{type: "data", message: unknown[]} | {type: "error", message: unknown }} fetchAllMiddlewareMessageEvent
+		 */
+
+		/**
+		 * Handles message events
+		 *
+		 * @param {MessageEvent<fetchAllMiddlewareMessageEvent>} message
+		 */
+		const handleMessage = ( { data } ) => {
+			// Cleans worker events listeners
+			worker.removeEventListener( 'message', handleMessage );
+			worker.removeEventListener( 'messageerror', reject );
+			worker.removeEventListener( 'error', reject );
+
+			// Process message
+			if ( data.type === 'error' ) {
+				return reject( data.message );
+			}
+
+			resolve( data.message );
+		};
+
+		worker.addEventListener( 'message', handleMessage );
+		worker.addEventListener( 'messageerror', reject );
+		worker.addEventListener( 'error', reject );
+	} );
+
+	const totalPagesAvailable = getTotalPages( response ) ?? 0;
+
+	// Calculate remaining pages to request.
+	const remainingPagesToRequest = Math.max( totalPagesAvailable - 1, 0 );
+
+	const pagesToRequest = Array.from(
+		{ length: remainingPagesToRequest },
+		( _, index ) => `${ initialQuery.url }&page=${ index + 2 }`
+	);
+
+	const requestHeaders = [ ...response.headers.entries() ];
+
+	worker.postMessage( {
+		firstPageResult,
+		pagesToRequest,
+		requestHeaders,
+	} );
+
+	return workerWorkPromise;
 };
 
 export default fetchAllMiddleware;

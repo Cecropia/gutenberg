@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import combineReducers from 'turbo-combine-reducers';
+import turboCombineReducers from 'turbo-combine-reducers';
 
 /**
  * Internal dependencies
@@ -77,7 +77,7 @@ export { plugins };
  * @return {Function} A reducer that invokes every reducer inside the reducers
  *                    object, and constructs a state object with the same shape.
  */
-export { combineReducers };
+export const combineReducers = turboCombineReducers;
 
 /**
  * Given a store descriptor, returns an object of the store's selectors.
