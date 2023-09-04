@@ -422,7 +422,11 @@ const debouncedReceiveEntityRecords = debounce(
 			edits
 		);
 	},
-	refreshEntityRecordsDebounceTime
+	refreshEntityRecordsDebounceTime,
+	{
+		leading: true,
+		trailing: true,
+	}
 );
 
 /**
