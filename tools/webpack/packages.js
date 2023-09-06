@@ -136,6 +136,15 @@ module.exports = {
 			},
 		};
 	}, {} ),
+	module: {
+		rules: [
+			{
+				test: /\.worker.js$/,
+				type: 'asset/resource',
+				generator: { filename: 'build/workers/[hash][ext][query]' },
+			},
+		],
+	},
 	output: {
 		devtoolNamespace: 'wp',
 		filename: './build/[name]/index.min.js',
