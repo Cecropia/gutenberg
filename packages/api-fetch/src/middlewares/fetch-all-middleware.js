@@ -15,7 +15,7 @@ const worker = new window.Worker(
 	{
 		name: 'Fetch All Middleware Worker',
 		type: 'module',
-		credentials: 'include',
+		credentials: 'same-origin',
 	}
 );
 

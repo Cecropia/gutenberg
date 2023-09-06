@@ -37,7 +37,7 @@ async function handleMessage( { data } ) {
 		const { firstPageResult, pagesToRequest, requestHeaders } = data;
 
 		if ( ! firstPageResult || ! pagesToRequest || ! requestHeaders ) {
-			throw new Error( 'No data received.' );
+			throw new Error();
 		}
 
 		const pageFetcher = createPageFetcher( {
@@ -63,7 +63,10 @@ async function handleMessage( { data } ) {
 
 		self.postMessage( successResponse );
 	} catch ( error ) {
-		self.postMessage( { type: 'error', message: error } );
+		self.postMessage( {
+			type: 'error',
+			message: 'Something went wrong while processing the message.',
+		} );
 	}
 }
 
@@ -74,7 +77,7 @@ async function handleMessage( { data } ) {
 function handleMessageError() {
 	const errorResponse = {
 		type: 'error',
-		message: new Error( 'Cannot deserialize message.' ),
+		message: "The received message can't be deserialized.",
 	};
 
 	self.postMessage( errorResponse );
@@ -83,12 +86,11 @@ function handleMessageError() {
 /**
  * Handles worker error events.
  *
- * @param {Event | string} error
  */
-function handleError( error ) {
+function handleError() {
 	const errorResponse = {
 		type: 'error',
-		message: error,
+		message: 'Something went wrong.',
 	};
 
 	self.postMessage( errorResponse );
