@@ -76,7 +76,7 @@ export type ControlledRangeValue = number | '' | null;
 
 export type RangeControlProps< IconProps = unknown > = Pick<
 	BaseControlProps,
-	'hideLabelFromVision' | 'help'
+	'hideLabelFromVision' | 'help' | '__nextHasNoMarginBottom'
 > &
 	MarksProps & {
 		/**
@@ -88,7 +88,7 @@ export type RangeControlProps< IconProps = unknown > = Pick<
 		 */
 		afterIcon?: IconType< IconProps >;
 		/**
-		 * If this property is true, a button to reset the the slider is
+		 * If this property is true, a button to reset the slider is
 		 * rendered.
 		 *
 		 * @default false
@@ -119,7 +119,9 @@ export type RangeControlProps< IconProps = unknown > = Pick<
 		 */
 		icon?: string;
 		/**
-		 * If no value exists this prop contains the slider starting position.
+		 * The slider starting position, used when no `value` is passed.
+		 * The `initialPosition` will be clamped between the provided `min`
+		 * and `max` prop values.
 		 */
 		initialPosition?: number;
 		/**
@@ -234,14 +236,15 @@ export type RailProps = MarksProps & {
 export type InputRangeProps = {
 	describedBy?: string;
 	label?: string;
-	onHideTooltip?: () => void;
 	onMouseLeave?: MouseEventHandler< HTMLInputElement >;
 	onMouseMove?: MouseEventHandler< HTMLInputElement >;
-	onShowTooltip?: () => void;
 	value?: number | '';
 };
 
-export type WrapperProps = {
+export type WrapperProps = Pick<
+	BaseControlProps,
+	'__nextHasNoMarginBottom'
+> & {
 	color?: CSSProperties[ 'color' ];
 	marks?: RangeMarks;
 };
@@ -285,39 +288,6 @@ export type UseControlledRangeValueArgs = {
 	 * The current value.
 	 */
 	value: number | null;
-};
-
-export type UseDebouncedHoverInteractionArgs = {
-	/**
-	 *  A callback function invoked when the element is hidden.
-	 *
-	 * @default () => {}
-	 */
-	onHide?: () => void;
-	/**
-	 * A callback function invoked when the mouse is moved out of the element.
-	 *
-	 * @default () => {}
-	 */
-	onMouseLeave?: MouseEventHandler< HTMLInputElement >;
-	/**
-	 * A callback function invoked when the mouse is moved.
-	 *
-	 * @default () => {}
-	 */
-	onMouseMove?: MouseEventHandler< HTMLInputElement >;
-	/**
-	 * A callback function invoked when the element is shown.
-	 *
-	 * @default () => {}
-	 */
-	onShow?: () => void;
-	/**
-	 * Timeout before the element is shown or hidden.
-	 *
-	 * @default 300
-	 */
-	timeout?: number;
 };
 
 export type UseMarksArgs = NumericProps & {

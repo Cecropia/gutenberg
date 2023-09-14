@@ -16,15 +16,14 @@ A RangeControl for volume
 
 ### Anatomy
 
-![](https://make.wordpress.org/design/files/2018/12/rangecontrol-anatomy.png)
-
 A RangeControl can contain the following elements:
 
-1. **Track**: The track shows the range available for user selection. For left-to-right (LTR) languages, the smallest value appears on the far left, and the largest value on the far right. For right-to-left (RTL) languages this orientation is reversed, with the smallest value on the far right and the largest value on the far left.
-2. **Thumb**: The thumb slides along the track, displaying the selected value through its position.
-3. **Value entry field**: The value entry field displays the currently selected, specific numerical value.
-4. **Icon** (optional): An icon can be displayed before or after the slider.
-5. **Tick mark** (optional): Tick marks represent predetermined values to which the user can move the slider.
+1. **Rail**: The rail represents the entire surface area of the slider, from the minimum value selectable by the user to the maximum value selectable by the user. For left-to-right (LTR) languages, the minimum value appears on the far left, and the maximum value on the far right. For right-to-left (RTL) languages this orientation is reversed, with the minimum value on the far right and the maximum value on the far left.
+2. **Track**: The track represents the portion of the rail from the minimum value to the currently selected value.
+3. **Thumb**: The thumb slides along the track, displaying the selected value through its position.
+4. **Value entry field**: The value entry field displays the currently selected, specific numerical value.
+5. **Icon** (optional): An icon can be displayed before or after the slider.
+6. **Tick mark** (optional): Tick marks represent predetermined values to which the user can move the slider.
 
 ### Types
 
@@ -184,7 +183,7 @@ An icon to be shown above the slider next to its container title.
 
 ### `initialPosition`: `number`
 
-If no value exists this prop contains the slider starting position.
+The slider starting position, used when no `value` is passed. The `initialPosition` will be clamped between the provided `min` and `max` prop values.
 
 -   Required: No
 -   Platform: Web | Mobile
