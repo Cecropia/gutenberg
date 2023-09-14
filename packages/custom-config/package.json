@@ -1,0 +1,40 @@
+{
+	"name": "@wordpress/custom-config",
+	"version": "1.0.0",
+	"description": "Gutenberg Custom Configurations.",
+	"author": "The WordPress Contributors",
+	"license": "GPL-2.0-or-later",
+	"keywords": [
+		"wordpress",
+		"gutenberg",
+		"custom-config"
+	],
+	"homepage": "",
+	"repository": {
+		"type": "git",
+		"url": "",
+		"directory": "packages/custom-config"
+	},
+	"bugs": {
+		"url": "https://github.com/WordPress/gutenberg/issues"
+	},
+	"engines": {
+		"node": ">=12"
+	},
+	"main": "build/index.js",
+	"module": "build-module/index.js",
+	"types": "build-types",
+	"sideEffects": [
+		"{src,build,build-module}/index.js"
+	],
+	"dependencies": {
+		"@babel/runtime": "^7.16.0",
+		"@wordpress/data": "file:../data"
+	},
+	"peerDependencies": {
+		"react": "^17.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

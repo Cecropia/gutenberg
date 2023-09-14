@@ -4,7 +4,12 @@
 		"rootDir": "src",
 		"declarationDir": "build-types"
 	},
-	"references": [ { "path": "../i18n" }, { "path": "../url" } ],
+	"references": [
+		{ "path": "../i18n" },
+		{ "path": "../url" },
+		{ "path": "../data" },
+		{ "path": "../custom-config" }
+	],
 	"include": [ "src/**/*" ],
 	"exclude": [ "**/test/**/*" ]
 }

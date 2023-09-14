@@ -10,6 +10,7 @@
 		{ "path": "packages/components" },
 		{ "path": "packages/compose" },
 		{ "path": "packages/core-data" },
+		{ "path": "packages/custom-config" },
 		{ "path": "packages/data" },
 		{ "path": "packages/date" },
 		{ "path": "packages/deprecated" },

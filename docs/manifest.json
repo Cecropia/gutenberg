@@ -1488,6 +1488,12 @@
 		"parent": "packages-create-block"
 	},
 	{
+		"title": "@wordpress/custom-config",
+		"slug": "packages-custom-config",
+		"markdown_source": "../packages/custom-config/README.md",
+		"parent": "packages"
+	},
+	{
 		"title": "@wordpress/custom-templated-path-webpack-plugin",
 		"slug": "packages-custom-templated-path-webpack-plugin",
 		"markdown_source": "../packages/custom-templated-path-webpack-plugin/README.md",
